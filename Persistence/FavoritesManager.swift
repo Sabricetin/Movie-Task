@@ -9,7 +9,9 @@ import Foundation
 import Combine
 
 final class FavoritesManager: ObservableObject {
-    @Published private(set) var favoriteIDs: Set<Int> = []
+    @Published private(set) var favoriteIDs: [Int] = []
+    @Published private(set) var favoriteMovies: [Movie] = []
+
 
     private let storageKey = "favorite_movie_ids"
 
@@ -22,24 +24,43 @@ final class FavoritesManager: ObservableObject {
     }
 
     func toggle(_ movie: Movie) {
-        if isFavorite(movie) {
-            favoriteIDs.remove(movie.id)
+        
+        print("🧪 \(movie.title) → posterPath: \(movie.posterPath ?? "nil")")
+
+        if let index = favoriteIDs.firstIndex(of: movie.id) {
+            // Favoriden çıkar
+            favoriteIDs.remove(at: index)
+            favoriteMovies.removeAll { $0.id == movie.id }
         } else {
-            favoriteIDs.insert(movie.id)
+            // Favoriye ekle (en üste)
+            favoriteIDs.insert(movie.id, at: 0)
+            favoriteMovies.insert(movie, at: 0)
         }
+
         saveFavorites()
     }
 
     private func loadFavorites() {
-        if let data = UserDefaults.standard.data(forKey: storageKey),
-           let decoded = try? JSONDecoder().decode(Set<Int>.self, from: data) {
-            favoriteIDs = decoded
+        if let idData = UserDefaults.standard.data(forKey: "favorite_movie_ids"),
+           let decodedIDs = try? JSONDecoder().decode([Int].self, from: idData) {
+            favoriteIDs = decodedIDs
+        }
+
+        if let movieData = UserDefaults.standard.data(forKey: "favorite_movie_objects"),
+           let decodedMovies = try? JSONDecoder().decode([Movie].self, from: movieData) {
+            favoriteMovies = decodedMovies
         }
     }
 
+
     private func saveFavorites() {
-        if let encoded = try? JSONEncoder().encode(favoriteIDs) {
-            UserDefaults.standard.set(encoded, forKey: storageKey)
+        if let idData = try? JSONEncoder().encode(favoriteIDs) {
+            UserDefaults.standard.set(idData, forKey: "favorite_movie_ids")
+        }
+
+        if let movieData = try? JSONEncoder().encode(favoriteMovies) {
+            UserDefaults.standard.set(movieData, forKey: "favorite_movie_objects")
         }
     }
+
 }

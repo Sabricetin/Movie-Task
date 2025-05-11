@@ -13,18 +13,8 @@ final class FavoritesViewModel: ObservableObject {
 
     private var cancellables = Set<AnyCancellable>()
 
-    init() {}
-}
-
-extension FavoritesViewModel {
-    static let placeholder = FavoritesViewModel()
-
-    func configure(favoritesManager: FavoritesManager, allMoviesPublisher: AnyPublisher<[Movie], Never>) {
-        allMoviesPublisher
-            .combineLatest(favoritesManager.$favoriteIDs)
-            .map { allMovies, ids in
-                allMovies.filter { ids.contains($0.id) }
-            }
+    func bind(favoritesManager: FavoritesManager) {
+        favoritesManager.$favoriteMovies
             .receive(on: DispatchQueue.main)
             .assign(to: &$favoriteMovies)
     }

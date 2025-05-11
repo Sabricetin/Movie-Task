@@ -39,12 +39,19 @@ struct Movie: Identifiable, Codable, Equatable , Hashable {
     }
 
     var posterURL: URL? {
-        guard let path = posterPath else { return nil }
-        return URL(string: "https://image.tmdb.org/t/p/w500\(path)")
+        guard let urlString = posterURLString else { return nil }
+        return URL(string: urlString)
     }
 
     var backdropURL: URL? {
         guard let path = backdropPath else { return nil }
         return URL(string: "https://image.tmdb.org/t/p/w780\(path)")
     }
+    
+    var posterURLString: String? {
+        guard let path = posterPath else { return nil }
+        return "https://image.tmdb.org/t/p/w500\(path)"
+    }
+
 }
+
