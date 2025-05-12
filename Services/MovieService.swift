@@ -40,15 +40,69 @@ final class MovieService {
 
     // MARK: - Public Functions
 
-    func fetchTrending() -> AnyPublisher<[Movie], Error> {
-        fetch(from: "trending/movie/week")
+    func fetchTrending(page: Int) -> AnyPublisher<MovieResponse, Error> {
+        guard var urlComponents = URLComponents(string: "\(MovieConstants.baseURL)/trending/movie/week") else {
+            return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
+        }
+
+        urlComponents.queryItems = [
+            URLQueryItem(name: "api_key", value: MovieConstants.apiKey),
+            URLQueryItem(name: "language", value: "en-US"),
+            URLQueryItem(name: "page", value: "\(page)")
+        ]
+
+        guard let url = urlComponents.url else {
+            return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
+        }
+
+        return URLSession.shared.dataTaskPublisher(for: url)
+            .map(\.data)
+            .decode(type: MovieResponse.self, decoder: decoder)
+            .eraseToAnyPublisher()
     }
 
-    func fetchTopRated() -> AnyPublisher<[Movie], Error> {
-        fetch(from: "movie/top_rated")
+
+    func fetchTopRated(page: Int) -> AnyPublisher<MovieResponse, Error> {
+        guard var urlComponents = URLComponents(string: "\(MovieConstants.baseURL)/movie/top_rated") else {
+            return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
+        }
+
+        urlComponents.queryItems = [
+            URLQueryItem(name: "api_key", value: MovieConstants.apiKey),
+            URLQueryItem(name: "language", value: "en-US"),
+            URLQueryItem(name: "page", value: "\(page)")
+        ]
+
+        guard let url = urlComponents.url else {
+            return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
+        }
+
+        return URLSession.shared.dataTaskPublisher(for: url)
+            .map(\.data)
+            .decode(type: MovieResponse.self, decoder: decoder)
+            .eraseToAnyPublisher()
     }
 
-    func fetchPopular() -> AnyPublisher<[Movie], Error> {
-        fetch(from: "movie/popular")
+
+    func fetchPopular(page: Int) -> AnyPublisher<MovieResponse, Error> {
+        guard var urlComponents = URLComponents(string: "\(MovieConstants.baseURL)/movie/popular") else {
+            return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
+        }
+
+        urlComponents.queryItems = [
+            URLQueryItem(name: "api_key", value: MovieConstants.apiKey),
+            URLQueryItem(name: "language", value: "en-US"),
+            URLQueryItem(name: "page", value: "\(page)")
+        ]
+
+        guard let url = urlComponents.url else {
+            return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
+        }
+
+        return URLSession.shared.dataTaskPublisher(for: url)
+            .map(\.data)
+            .decode(type: MovieResponse.self, decoder: decoder)
+            .eraseToAnyPublisher()
     }
+
 }

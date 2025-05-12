@@ -99,6 +99,12 @@ struct HomeView: View {
                 trendingIndex = (trendingIndex + 1) % viewModel.trendingMovies.count
             }
         }
+        
+        .onAppear {
+              if viewModel.trendingMovies.count < 20 {
+                  viewModel.loadMoreTrending()
+              }
+          }
         // Navigation wrapper
         .background(
             NavigationLink(
@@ -117,10 +123,10 @@ struct HomeView: View {
                 .font(.title2)
                 .bold()
                 .padding(.leading, 4)
-            
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    ForEach(movies.prefix(10)) { movie in
+                    ForEach(movies) { movie in
                         NavigationLink(destination: MovieDetailView(movie: movie)) {
                             VStack(alignment: .leading, spacing: 4) {
                                 AsyncImage(url: movie.posterURL) { image in
@@ -133,20 +139,31 @@ struct HomeView: View {
                                 .frame(width: 120, height: 180)
                                 .cornerRadius(8)
                                 .clipped()
-                                
+
                                 Text(movie.title)
                                     .font(.caption)
                                     .lineLimit(1)
                             }
                             .frame(width: 120)
                         }
-                        .buttonStyle(PlainButtonStyle()) // Görünüm bozulmasın diye
+                        .buttonStyle(PlainButtonStyle())
+                        .onAppear {
+                            // ✅ Sayfa sonuna gelince yeni sayfa yüklensin
+                            if movie == movies.last {
+                                if title.contains("Top Rated") {
+                                    viewModel.loadMoreTopRated()
+                                } else if title.contains("Popular") {
+                                    viewModel.loadMorePopular()
+                                }
+                            }
+                        }
                     }
                 }
                 .padding(.horizontal, 4)
             }
         }
     }
+
     
 }
 

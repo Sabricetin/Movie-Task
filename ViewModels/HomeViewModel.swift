@@ -9,7 +9,7 @@ import Foundation
 import Combine
 
 final class HomeViewModel: ObservableObject {
-    // MARK: - Published Properties (UI'ya yansıyacak veriler)
+    // MARK: - Published Properties
     @Published var trendingMovies: [Movie] = []
     @Published var topRatedMovies: [Movie] = []
     @Published var popularMovies: [Movie] = []
@@ -20,34 +20,89 @@ final class HomeViewModel: ObservableObject {
     private let service = MovieService()
     private var cancellables = Set<AnyCancellable>()
 
+    // MARK: - Pagination State
+    private var currentTopRatedPage = 1
+    private var totalTopRatedPages = 1
+    private var isLoadingTopRated = false
+
+    private var currentPopularPage = 1
+    private var totalPopularPages = 1
+    private var isLoadingPopular = false
+
+    private var currentTrendingPage = 1
+    private var totalTrendingPages = 1
+    private var isLoadingTrending = false
+
     // MARK: - Init
     init() {
-        fetchAllMovieLists()
+        loadMoreTopRated()
+        loadMoreTrending()
+        loadMorePopular()
     }
 
-    // MARK: - Fetch
-    func fetchAllMovieLists() {
-        isLoading = true
+    // MARK: - Infinite Scroll Loaders
 
-        let trendingPublisher = service.fetchTrending()
-        let topRatedPublisher = service.fetchTopRated()
-        let popularPublisher = service.fetchPopular()
+    func loadMoreTopRated() {
+        guard !isLoadingTopRated, currentTopRatedPage <= totalTopRatedPages else { return }
 
-        Publishers.Zip3(trendingPublisher, topRatedPublisher, popularPublisher)
+        isLoadingTopRated = true
+
+        service.fetchTopRated(page: currentTopRatedPage)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
-                self?.isLoading = false
+                self?.isLoadingTopRated = false
                 if case let .failure(error) = completion {
                     self?.errorMessage = error.localizedDescription
                 }
-            } receiveValue: { [weak self] trending, topRated, popular in
-                self?.trendingMovies = trending
-                self?.topRatedMovies = topRated
-                self?.popularMovies = popular
+            } receiveValue: { [weak self] response in
+                self?.topRatedMovies.append(contentsOf: response.results)
+                self?.currentTopRatedPage += 1
+                self?.totalTopRatedPages = response.totalPages
             }
             .store(in: &cancellables)
     }
-    
+
+    func loadMoreTrending() {
+        guard !isLoadingTrending, currentTrendingPage <= totalTrendingPages else { return }
+
+        isLoadingTrending = true
+
+        service.fetchTrending(page: currentTrendingPage)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] completion in
+                self?.isLoadingTrending = false
+                if case let .failure(error) = completion {
+                    self?.errorMessage = error.localizedDescription
+                }
+            } receiveValue: { [weak self] response in
+                self?.trendingMovies.append(contentsOf: response.results)
+                self?.currentTrendingPage += 1
+                self?.totalTrendingPages = response.totalPages
+            }
+            .store(in: &cancellables)
+    }
+
+    func loadMorePopular() {
+        guard !isLoadingPopular, currentPopularPage <= totalPopularPages else { return }
+
+        isLoadingPopular = true
+
+        service.fetchPopular(page: currentPopularPage)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] completion in
+                self?.isLoadingPopular = false
+                if case let .failure(error) = completion {
+                    self?.errorMessage = error.localizedDescription
+                }
+            } receiveValue: { [weak self] response in
+                self?.popularMovies.append(contentsOf: response.results)
+                self?.currentPopularPage += 1
+                self?.totalPopularPages = response.totalPages
+            }
+            .store(in: &cancellables)
+    }
+
+    // MARK: - Combine All Movies (for Favorites)
     var allMoviesPublisher: AnyPublisher<[Movie], Never> {
         Publishers.CombineLatest3(
             $trendingMovies,
@@ -56,10 +111,9 @@ final class HomeViewModel: ObservableObject {
         )
         .map { trending, topRated, popular in
             let combined = trending + topRated + popular
-            let unique = Array(Set(combined)) // Aynı film üç listede olabilir, filtrele
+            let unique = Array(Set(combined))
             return unique
         }
         .eraseToAnyPublisher()
     }
-
 }
